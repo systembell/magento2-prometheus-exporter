@@ -14,10 +14,11 @@ use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Store\Api\StoreRepositoryInterface;
-use RunAsRoot\PrometheusExporter\Api\MetricAggregatorInterface;
+use RunAsRoot\PrometheusExporter\Aggregator\AbstractGaugeMetricAggregator;
+use RunAsRoot\PrometheusExporter\Api\MetricCollectorRegistryInterface;
 use RunAsRoot\PrometheusExporter\Service\UpdateMetricService;
 
-class OrderCountAggregator implements MetricAggregatorInterface
+class OrderCountAggregator extends AbstractGaugeMetricAggregator
 {
     private const METRIC_CODE = 'magento2_orders_count_total';
 
@@ -42,38 +43,25 @@ class OrderCountAggregator implements MetricAggregatorInterface
     private $storeRepository;
 
     public function __construct(
+        string $namespace,
+        string $code,
+        string $help,
+        MetricCollectorRegistryInterface $metricCollectorRegistry,
         UpdateMetricService $updateMetricService,
         OrderRepositoryInterface $orderRepository,
         StoreRepositoryInterface $storeRepository,
-        SearchCriteriaBuilder $searchCriteriaBuilder
+        SearchCriteriaBuilder $searchCriteriaBuilder,
+        array $labels = []
     ) {
+        parent::__construct($namespace, $code, $help, $metricCollectorRegistry, $labels);
+
         $this->updateMetricService = $updateMetricService;
         $this->orderRepository = $orderRepository;
         $this->searchCriteriaBuilder = $searchCriteriaBuilder;
         $this->storeRepository = $storeRepository;
     }
 
-    public function getCode(): string
-    {
-        return self::METRIC_CODE;
-    }
-
-    public function getHelp(): string
-    {
-        return 'Magento2 Order Count by state';
-    }
-
-    public function getType(): string
-    {
-        return 'gauge';
-    }
-
-    /**
-     * @return bool
-     * @throws CouldNotSaveException
-     *
-     */
-    public function aggregate(): bool
+    public function aggregate()
     {
         $searchCriteria = $this->searchCriteriaBuilder->create();
 
@@ -110,9 +98,7 @@ class OrderCountAggregator implements MetricAggregatorInterface
 
         foreach ($countByStore as $storeCode => $countByState) {
             foreach ($countByState as $state => $count) {
-                $labels = ['state' => $state, 'store_code' => $storeCode];
-
-                $this->updateMetricService->update(self::METRIC_CODE, (string)$count, $labels);
+                $this->getCollector()->set($count, [$state, $storeCode]);
             }
         }
 

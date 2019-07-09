@@ -4,10 +4,12 @@
         <tab id="run_as_root" sortOrder="999" translate="label">
             <label>Prometheus</label>
         </tab>
+
         <section id="metric_configuration" showInDefault="1" showInStore="1" showInWebsite="1" sortOrder="10" translate="label">
             <label>Metric Configuration</label>
             <tab>run_as_root</tab>
             <resource>RunAsRoot_PrometheusExporter::config_runasroot_prometheusexporter</resource>
+
             <group id="metric" showInDefault="1" showInStore="1" showInWebsite="1" sortOrder="10" translate="label">
                 <label>Enable/Disable Metric</label>
                 <comment>In case you only want to enable a specific set of data, this is where you can enable/disable the exposure of the different data groups to prometheus.</comment>
@@ -16,6 +18,76 @@
                     <label>Metric Status</label>
                     <source_model>RunAsRoot\PrometheusExporter\Model\SourceModel\Metrics</source_model>
                     <comment>enable or disable the exposure of specific metrics to prometheus.</comment>
+                </field>
+            </group>
+
+            <group id="adapter" translate="label" showInDefault="1" showInWebsite="0" showInStore="0" sortOrder="20">
+                <label>Adapter Configuration</label>
+
+                <field id="adapter" type="select" translate="label" showInDefault="1" showInWebsite="0" showInStore="0" sortOrder="10">
+                    <label>Adapter</label>
+                    <source_model>RunAsRoot\PrometheusExporter\Model\Config\Source\CollectorRegistryAdapter</source_model>
+                    <comment>What adapter to use to store the metrics.</comment>
+                </field>
+
+                <field id="redis_host" type="text" translate="label" showInDefault="1" showInWebsite="0" showInStore="0" sortOrder="10">
+                    <label>Host</label>
+
+                    <depends>
+                        <field id="adapter">redis</field>
+                    </depends>
+                </field>
+
+                <field id="redis_port" type="text" translate="label" showInDefault="1" showInWebsite="0" showInStore="0" sortOrder="20">
+                    <label>Port</label>
+                    <validate>validate-digits</validate>
+
+                    <depends>
+                        <field id="adapter">redis</field>
+                    </depends>
+                </field>
+
+                <field id="redis_password" type="password" translate="label" showInDefault="1" showInWebsite="0" showInStore="0" sortOrder="30">
+                    <label>Password</label>
+
+                    <depends>
+                        <field id="adapter">redis</field>
+                    </depends>
+                </field>
+
+                <field id="redis_timeout" type="text"  translate="label comment" showInDefault="1" showInWebsite="0" showInStore="0" sortOrder="40">
+                    <label>Timeout</label>
+                    <comment>in seconds</comment>
+
+                    <depends>
+                        <field id="adapter">redis</field>
+                    </depends>
+                </field>
+
+                <field id="redis_read_timeout" translate="label comment" type="text" showInDefault="1" showInWebsite="0" showInStore="0" sortOrder="50">
+                    <label>Read Timeout</label>
+                    <comment>in seconds</comment>
+
+                    <depends>
+                        <field id="adapter">redis</field>
+                    </depends>
+                </field>
+
+                <field id="redis_persistent_connections" translate="label" type="select" showInDefault="1" showInWebsite="0" showInStore="0" sortOrder="60">
+                    <label>Persistent Connections</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+
+                    <depends>
+                        <field id="adapter">redis</field>
+                    </depends>
+                </field>
+
+                <field id="redis_prefix" translate="label" type="text" showInDefault="1" showInWebsite="0" showInStore="0" sortOrder="70">
+                    <label>Prefix</label>
+
+                    <depends>
+                        <field id="adapter">redis</field>
+                    </depends>
                 </field>
             </group>
         </section>

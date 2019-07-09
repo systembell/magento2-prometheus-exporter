@@ -16,7 +16,7 @@ interface MetricAggregatorInterface
      *
      * @return bool
      */
-    public function aggregate(): bool;
+    public function aggregate();
 
     /**
      * The metric code is the name of the specific metric.
@@ -50,4 +50,13 @@ interface MetricAggregatorInterface
      * @return string
      */
     public function getType() : string;
+
+    /**
+     * TODO: document this
+     *
+     * @return string
+     */
+    public function getNamespace() : string;
+
+    public function getLabels() : array;
 }

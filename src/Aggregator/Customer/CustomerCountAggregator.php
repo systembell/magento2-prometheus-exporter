@@ -13,13 +13,12 @@ use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Api\StoreRepositoryInterface;
-use RunAsRoot\PrometheusExporter\Api\MetricAggregatorInterface;
+use RunAsRoot\PrometheusExporter\Aggregator\AbstractGaugeMetricAggregator;
+use RunAsRoot\PrometheusExporter\Api\MetricCollectorRegistryInterface;
 use RunAsRoot\PrometheusExporter\Service\UpdateMetricService;
 
-class CustomerCountAggregator implements MetricAggregatorInterface
+class CustomerCountAggregator extends AbstractGaugeMetricAggregator
 {
-    private const METRIC_CODE = 'magento2_customer_count_total';
-
     /**
      * @var UpdateMetricService
      */
@@ -41,36 +40,28 @@ class CustomerCountAggregator implements MetricAggregatorInterface
     private $customerRepository;
 
     public function __construct(
+        string $namespace,
+        string $code,
+        string $help,
+        MetricCollectorRegistryInterface $metricCollectorRegistry,
         UpdateMetricService $updateMetricService,
         CustomerRepositoryInterface $customerRepository,
         StoreRepositoryInterface $storeRepository,
-        SearchCriteriaBuilder $searchCriteriaBuilder
+        SearchCriteriaBuilder $searchCriteriaBuilder,
+        array $labels = []
     ) {
+        parent::__construct($namespace, $code, $help, $metricCollectorRegistry, $labels);
+
         $this->updateMetricService = $updateMetricService;
         $this->customerRepository = $customerRepository;
         $this->searchCriteriaBuilder = $searchCriteriaBuilder;
         $this->storeRepository = $storeRepository;
     }
 
-    public function getCode(): string
-    {
-        return self::METRIC_CODE;
-    }
-
-    public function getHelp(): string
-    {
-        return 'Magento2 Customer Count by state';
-    }
-
-    public function getType(): string
-    {
-        return 'gauge';
-    }
-
     /**
      * @throws LocalizedException
      */
-    public function aggregate(): bool
+    public function aggregate()
     {
         $searchCriteria = $this->searchCriteriaBuilder->create();
 
@@ -101,9 +92,7 @@ class CustomerCountAggregator implements MetricAggregatorInterface
         }
 
         foreach ($countByStore as $storeCode => $count) {
-            $labels = ['store_code' => $storeCode];
-
-            $this->updateMetricService->update(self::METRIC_CODE, (string)$count, $labels);
+            $this->getCollector()->set($count, [$storeCode]);
         }
 
         return true;

@@ -13,13 +13,17 @@ namespace RunAsRoot\PrometheusExporter\Result;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\App\Response\HttpInterface as HttpResponseInterface;
 use Magento\Framework\Controller\Result\Raw;
+use Prometheus\RenderTextFormat;
 use RunAsRoot\PrometheusExporter\Api\Data\MetricInterface;
+use RunAsRoot\PrometheusExporter\Api\MetricCollectorRegistryInterface;
 use RunAsRoot\PrometheusExporter\Api\MetricRepositoryInterface;
 use RunAsRoot\PrometheusExporter\Data\Config;
 use RunAsRoot\PrometheusExporter\Metric\MetricAggregatorPool;
+use RunAsRoot\PrometheusExporter\Metric\MetricCollectorRegistry;
 
 class PrometheusResult extends Raw
 {
+    private $metricCollectorRegistry;
     /**
      * @var MetricRepositoryInterface
      */
@@ -40,83 +44,31 @@ class PrometheusResult extends Raw
      */
     private $config;
 
+    private $renderTextFormat;
+
     public function __construct(
+        MetricCollectorRegistryInterface $metricCollectorRegistry,
         MetricAggregatorPool $metricAggregatorPool,
         MetricRepositoryInterface $metricRepository,
         SearchCriteriaBuilder $searchCriteriaBuilder,
-        Config $config
+        Config $config,
+        RenderTextFormat $renderTextFormat
     ) {
+        $this->metricCollectorRegistry = $metricCollectorRegistry;
         $this->metricRepository = $metricRepository;
         $this->searchCriteriaBuilder = $searchCriteriaBuilder;
         $this->metricAggregatorPool = $metricAggregatorPool;
         $this->config = $config;
+        $this->renderTextFormat = $renderTextFormat;
     }
 
     protected function render(HttpResponseInterface $response)
     {
-        parent::render($response);
-        $formattedMetrics = $this->collectMetrics();
-        $this->setContents($formattedMetrics);
+        $metrics = $this->renderTextFormat->render($this->metricCollectorRegistry->getMetricFamilySamples());
 
-        $response->setBody($this->contents);
-        $response->setHeader('Content-Type', 'text/plain; charset=UTF-8', true);
-        $this->setHeader('Content-Type', 'text/plain; charset=UTF-8', true);
+        $this->setContents($metrics);
+        $this->setHeader('Content-Type', RenderTextFormat::MIME_TYPE);
 
-        return $this;
-    }
-
-    protected function collectMetrics() : string
-    {
-        $searchCriteria = $this->searchCriteriaBuilder->create();
-        $searchResults = $this->metricRepository->getList($searchCriteria);
-
-        /** @var MetricInterface[] $metrics */
-        $metrics = $searchResults->getItems();
-
-        $output = '';
-        $enabledMetrics = $this->config->getMetricsStatus();
-        $addedMetaData = [];
-
-        foreach ($metrics as $metric) {
-            if (!in_array($metric->getCode(), $enabledMetrics, true)) {
-                continue;
-            }
-
-            $code = $metric->getCode();
-
-            $metricAggregator = $this->metricAggregatorPool->getByCode($code);
-
-            if ($metricAggregator === null) {
-                // @todo log missing metric aggregator or code mismatch
-                continue;
-            }
-
-            $help = $metricAggregator->getHelp();
-            $type = $metricAggregator->getType();
-            $value = $metric->getValue();
-
-            $labels = $metric->getLabels();
-            $label = '';
-            foreach ($labels as $labelName => $labelValue) {
-                $label .= sprintf('%s="%s",', $labelName, $labelValue);
-            }
-            $label = trim($label, ',');
-
-            $help    = "# HELP $code $help" . "\n";
-            if (!in_array($help, $addedMetaData, true)) {
-                $output .= $help;
-                $addedMetaData[] = $help;
-            }
-
-            $type    = "# TYPE $code $type" . "\n";
-            if (!in_array($type, $addedMetaData, true)) {
-                $output .= $type;
-                $addedMetaData[] = $type;
-            }
-
-            $output .= sprintf('%s{%s} %s', $code, $label, $value) . "\n";
-        }
-
-        return $output;
+        return parent::render($response);
     }
 }

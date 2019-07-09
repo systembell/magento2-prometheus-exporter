@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <metric_configuration>
+            <adapter>
+                <adapter>in_memory</adapter>
+                <redis_host>127.0.0.1</redis_host>
+                <redis_port>6379</redis_port>
+                <redis_timeout>0.1</redis_timeout>
+                <redis_read_timeout>10</redis_read_timeout>
+                <redis_persistent_connections>0</redis_persistent_connections>
+            </adapter>
+        </metric_configuration>
+    </default>
+</config>

@@ -15,13 +15,12 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\Order\Item as OrderItem;
 use Magento\Store\Api\StoreRepositoryInterface;
-use RunAsRoot\PrometheusExporter\Api\MetricAggregatorInterface;
+use RunAsRoot\PrometheusExporter\Aggregator\AbstractGaugeMetricAggregator;
+use RunAsRoot\PrometheusExporter\Api\MetricCollectorRegistryInterface;
 use RunAsRoot\PrometheusExporter\Service\UpdateMetricService;
 
-class OrderItemAmountAggregator implements MetricAggregatorInterface
+class OrderItemAmountAggregator extends AbstractGaugeMetricAggregator
 {
-    private const METRIC_CODE = 'magento2_orders_items_amount_total';
-
     /**
      * @var UpdateMetricService
      */
@@ -43,38 +42,25 @@ class OrderItemAmountAggregator implements MetricAggregatorInterface
     private $storeRepository;
 
     public function __construct(
+        string $namespace,
+        string $code,
+        string $help,
+        MetricCollectorRegistryInterface $metricCollectorRegistry,
         UpdateMetricService $updateMetricService,
         OrderRepositoryInterface $orderRepository,
         StoreRepositoryInterface $storeRepository,
-        SearchCriteriaBuilder $searchCriteriaBuilder
+        SearchCriteriaBuilder $searchCriteriaBuilder,
+        array $labels = []
     ) {
+        parent::__construct($namespace, $code, $help, $metricCollectorRegistry, $labels);
+
         $this->updateMetricService = $updateMetricService;
         $this->orderRepository = $orderRepository;
         $this->searchCriteriaBuilder = $searchCriteriaBuilder;
         $this->storeRepository = $storeRepository;
     }
 
-    public function getCode(): string
-    {
-        return self::METRIC_CODE;
-    }
-
-    public function getHelp(): string
-    {
-        return 'Magento2 Order Items Amount by state';
-    }
-
-    public function getType(): string
-    {
-        return 'gauge';
-    }
-
-    /**
-     * @return bool
-     * @throws CouldNotSaveException
-     *
-     */
-    public function aggregate(): bool
+    public function aggregate()
     {
         $searchCriteria = $this->searchCriteriaBuilder->create();
 
@@ -113,9 +99,7 @@ class OrderItemAmountAggregator implements MetricAggregatorInterface
 
         foreach ($grandTotalsByStore as $storeCode => $grandTotals) {
             foreach ($grandTotals as $status => $grandTotal) {
-                $labels = ['status' => $status, 'store_code' => $storeCode];
-
-                $this->updateMetricService->update(self::METRIC_CODE, (string)$grandTotal, $labels);
+                $this->getCollector()->set($grandTotal, [$status, $storeCode]);
             }
         }
 

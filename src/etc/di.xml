@@ -1,7 +1,83 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="RunAsRoot\PrometheusExporter\Api\MetricCollectorRegistryInterface" type="RunAsRoot\PrometheusExporter\Metric\MetricCollectorRegistry" />
     <preference for="RunAsRoot\PrometheusExporter\Api\Data\MetricInterface" type="RunAsRoot\PrometheusExporter\Model\Metric" />
     <preference for="RunAsRoot\PrometheusExporter\Api\MetricRepositoryInterface" type="RunAsRoot\PrometheusExporter\Repository\MetricRepository" />
+
+    <type name="RunAsRoot\PrometheusExporter\Aggregator\Cms\CmsBlockCountAggregator">
+        <arguments>
+            <argument name="namespace" xsi:type="string">magento</argument>
+            <argument name="code" xsi:type="string">magento_cms_block_count_total</argument>
+            <argument name="help" xsi:type="string">Magento 2 CMS Block Count</argument>
+        </arguments>
+    </type>
+
+    <type name="RunAsRoot\PrometheusExporter\Aggregator\Cms\CmsPagesCountAggregator">
+        <arguments>
+            <argument name="namespace" xsi:type="string">magento</argument>
+            <argument name="code" xsi:type="string">magento_cms_page_count_total</argument>
+            <argument name="help" xsi:type="string">Magento 2 CMS Page Count</argument>
+        </arguments>
+    </type>
+
+    <type name="RunAsRoot\PrometheusExporter\Aggregator\Customer\CustomerCountAggregator">
+        <arguments>
+            <argument name="namespace" xsi:type="string">magento2</argument>
+            <argument name="code" xsi:type="string">magento2_customer_count_total</argument>
+            <argument name="help" xsi:type="string">Magento2 Customer Count by state</argument>
+            <argument name="labels" xsi:type="array">
+                <item name="store_code" xsi:type="string">store_code</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="RunAsRoot\PrometheusExporter\Aggregator\Order\OrderAmountAggregator">
+        <arguments>
+            <argument name="namespace" xsi:type="string">magento2</argument>
+            <argument name="code" xsi:type="string">magento2_orders_amount_total</argument>
+            <argument name="help" xsi:type="string">Magento2 Order Count by state</argument>
+            <argument name="labels" xsi:type="array">
+                <item name="state" xsi:type="string">state</item>
+                <item name="store_code" xsi:type="string">store_code</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="RunAsRoot\PrometheusExporter\Aggregator\Order\OrderCountAggregator">
+        <arguments>
+            <argument name="namespace" xsi:type="string">magento2</argument>
+            <argument name="code" xsi:type="string">magento2_orders_count_total</argument>
+            <argument name="help" xsi:type="string">Magento2 Order Amount by state</argument>
+            <argument name="labels" xsi:type="array">
+                <item name="state" xsi:type="string">state</item>
+                <item name="store_code" xsi:type="string">store_code</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="RunAsRoot\PrometheusExporter\Aggregator\Order\OrderItemAmountAggregator">
+        <arguments>
+            <argument name="namespace" xsi:type="string">magento2</argument>
+            <argument name="code" xsi:type="string">magento2_orders_items_amount_total</argument>
+            <argument name="help" xsi:type="string">Magento2 Order Items Amount by state</argument>
+            <argument name="labels" xsi:type="array">
+                <item name="status" xsi:type="string">status</item>
+                <item name="store_code" xsi:type="string">store_code</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="RunAsRoot\PrometheusExporter\Aggregator\Order\OrderItemCountAggregator">
+        <arguments>
+            <argument name="namespace" xsi:type="string">magento2</argument>
+            <argument name="code" xsi:type="string">magento2_orders_items_count_total</argument>
+            <argument name="help" xsi:type="string">Magento2 Order Items Count by state</argument>
+            <argument name="labels" xsi:type="array">
+                <item name="status" xsi:type="string">status</item>
+                <item name="store_code" xsi:type="string">store_code</item>
+            </argument>
+        </arguments>
+    </type>
 
     <type name="RunAsRoot\PrometheusExporter\Metric\MetricAggregatorPool">
         <arguments>
@@ -31,6 +107,27 @@
         <arguments>
             <argument name="commands" xsi:type="array">
                 <item name="rar_list_metrics" xsi:type="object">RunAsRoot\PrometheusExporter\Console\Command\ListMetricsCommand</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="RunAsRoot\PrometheusExporter\Model\Config\Source\CollectorRegistryAdapter">
+        <arguments>
+            <argument name="adapters" xsi:type="array">
+                <item name="in_memory" xsi:type="array">
+                    <item name="label" xsi:type="string">In Memory</item>
+                    <item name="adapter" xsi:type="object">Prometheus\Storage\InMemory</item>
+                </item>
+
+                <item name="apcu" xsi:type="array">
+                    <item name="label" xsi:type="string">APCu</item>
+                    <item name="adapter" xsi:type="object">Prometheus\Storage\APC</item>
+                </item>
+
+                <item name="redis" xsi:type="array">
+                    <item name="label" xsi:type="string">Redis</item>
+                    <item name="adapter" xsi:type="object">Prometheus\Storage\Redis</item>
+                </item>
             </argument>
         </arguments>
     </type>
